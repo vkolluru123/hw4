@@ -247,7 +247,8 @@ protected:
     virtual void nodeSwap( Node<Key,Value>* n1, Node<Key,Value>* n2) ;
 
     // Add helper functions here
-    int findHeight(Node<Key,Value>* myNode); // helper i made
+    bool isBalancedHelper(Node<Key,Value>* myNode) const;
+    int findHeight(Node<Key,Value>* myNode) const; // helper i made
 
 
 protected:
@@ -485,14 +486,17 @@ void BinarySearchTree<Key, Value>::insert(const std::pair<const Key, Value> &key
 
     if (previous == NULL) {
         root_ = myNewNode;
+        myNewNode->setParent(NULL);
     }
 
     else if (keyValuePair.first < (previous->getKey())) {
         previous -> setLeft(myNewNode);
+        myNewNode->setParent(previous);
     }
 
     else {
         previous -> setRight(myNewNode);
+        myNewNode->setParent(previous);
     }
 
 }
@@ -514,65 +518,28 @@ void BinarySearchTree<Key, Value>::remove(const Key& key)
         return;
     }
 
-    // node has no children
-    if (((myNode->getLeft()) == NULL) && ((myNode->getRight()) == NULL)) {
-        if (myNode->getParent() == NULL) {
-            root_ = NULL;
-        }
-        else if (myNode->getParent()->getRight() == myNode) {
-            myNode->getParent()->setRight(NULL);
-        }
-        else {
-            myNode->getParent()->setLeft(NULL);
-        }
-        delete myNode;
-        return;
+    if(myNode->getLeft()!=NULL && myNode->getRight()!=NULL) {
+        Node<Key,Value>* myPred=predecessor(myNode);
+        nodeSwap(myNode,myPred);
     }
 
-    // node has 1 child
-    else if ((myNode->getLeft() == NULL) ^ ((myNode->getRight()) == NULL)) {
-        
-        Node<Key,Value>* myChild;
+    Node<Key,Value>* myChild=(myNode->getLeft()!=NULL)?myNode->getLeft():myNode->getRight();
+    if(myNode->getParent()==NULL) {
+        root_=myChild;
+        if(myChild) {myChild->setParent(NULL);}
 
-        if (myNode->getLeft() != NULL) {
-            myChild = myNode->getLeft();
-        }
+    }
+    else {
+        if(myNode->getParent()->getLeft()==myNode) {
+            myNode->getParent()->setLeft(myChild);}
+    
         else {
-            myChild = myNode->getRight();
-        }
-
-        if ((myNode->getParent()) == NULL) {
-            root_ = myChild;
-        }
-        else if ((myNode->getParent())->getRight() == myNode) {
             myNode->getParent()->setRight(myChild);
         }
-        else {
-            myNode->getParent()->setLeft(myChild);
+        
+        if(myChild!=NULL) {myChild->setParent(myNode->getParent());}
         }
-
-        myChild->setParent(myNode->getParent());
-
-        delete myNode;
-        return;
-
-    }
-
-    // node has 2 children
-    else {
-
-        /*Node<Key,Value>* successor = myNode->getRight();
-        while (successor->getLeft() != NULL) {
-          successor = successor->getLeft();
-        }
-        nodeSwap(myNode,successor);
-        remove(myNode->getKey());*/
-
-        Node<Key,Value>* myPred = predecessor(myNode);
-        nodeSwap(myNode,myPred);
-        remove(myPred->getKey());
-
-    }
+    delete myNode;
 
 }
 
@@ -588,21 +555,21 @@ BinarySearchTree<Key, Value>::predecessor(Node<Key, Value>* current)
     }
 
     if (current->getLeft() != NULL) {
-      Node <Key,Value>* myNode = current->getLeft();
-      while (myNode->getRight() != NULL) {
-        myNode = myNode->getRight();
+      Node <Key,Value>* myPred = current->getLeft();
+      while (myPred->getRight() != NULL) {
+        myPred = myPred->getRight();
       }
-      return myNode;
+      return myPred;
         //return getSmallestNode(current->getLeft());
     }
 
-    Node<Key,Value>* parent = current-> getParent();
-    while ((parent != NULL) && (current==parent->getLeft())) {
-        current=parent;
-        parent = parent->getParent();
+    Node<Key,Value>* myParent = current-> getParent();
+    while ((myParent != NULL) && (current==myParent->getLeft())) {
+        current=myParent;
+        myParent = myParent->getParent();
     }
 
-    return parent;
+    return myParent;
 
 }
 
@@ -694,64 +661,35 @@ template<typename Key, typename Value>
 bool BinarySearchTree<Key, Value>::isBalanced() const
 {
     // TODO
-    if (root_ == NULL) {
-        return true;
-    }
+    return isBalancedHelper(root_);
+}
 
-    // analyze right side
-    int rightHeight = 0;
-    if (root_ -> getRight() == NULL) {
-      rightHeight = 0;
-    }
-    else {
-      BinarySearchTree<Key, Value> rightTree;
-      rightTree.root_ = root_->getRight();
-      if (!rightTree.isBalanced()) {
+// helper function for isbalanced()
+template<typename Key,typename Value>
+bool BinarySearchTree<Key, Value>::isBalancedHelper(Node<Key,Value>* myNode) const {
+    if (myNode==NULL) {return true;}
+
+    int rightHeight = findHeight(myNode->getRight());
+    int leftHeight=findHeight(myNode->getLeft());
+    int mybal = leftHeight-rightHeight;
+    if(mybal>1 || mybal<-1) {
         return false;
-      }
-      rightHeight=rightTree.findHeight(root_->getRight());
     }
-
-    // analyze left side
-    int leftHeight = 0;
-    if (root_ -> getLeft() == NULL) {
-      leftHeight = 0;
-    }
-    else {
-      BinarySearchTree<Key, Value> leftTree;
-      leftTree.root_ = root_->getLeft();
-      if (!leftTree.isBalanced()) {
-        return false;
-      }
-      leftHeight=leftTree.findHeight(root_->getLeft());
-    }
-
-    // if unequal by less than 1, return true
-    int myDiff = rightHeight-leftHeight;
-    if (myDiff <= 1 && myDiff >= -1) {
-      return true;
-    }
-    // if unequal by more than 1, return false
-    else {
-      return false;
-    }
+    return isBalancedHelper(myNode->getLeft()) && isBalancedHelper(myNode->getRight());
 
 }
 
 // helper function for isbalanced()
 template<typename Key,typename Value>
-int BinarySearchTree<Key,Value>::findHeight(Node<Key,Value>* myNode) {
+int BinarySearchTree<Key,Value>::findHeight(Node<Key,Value>* myNode) const {
   
   if (myNode == NULL) {
     return -1;
   }
 
-  if (findHeight(myNode->getLeft()) > findHeight(myNode->getRight())) {
-    return 1+findHeight(myNode->getLeft());
-  }
-  else {
-    return 1+findHeight(myNode->getRight());
-  }
+  int leftH=findHeight(myNode->getLeft());
+  int rightH=findHeight(myNode->getRight());
+  return 1+std::max(leftH,rightH);
 
 }
 
