@@ -62,9 +62,9 @@ AVLNode<Key, Value>::AVLNode(const Key& key, const Value& value, AVLNode<Key, Va
 template<class Key, class Value>
 AVLNode<Key, Value>::~AVLNode()
 {
-  this->parent_=NULL;
+  /*this->parent_=NULL;
   this->left_=NULL;
-  this->right_=NULL;
+  this->right_=NULL;*/
 
 }
 

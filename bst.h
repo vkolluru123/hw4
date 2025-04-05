@@ -587,6 +587,31 @@ void BinarySearchTree<Key, Value>::clear()
     }
 
     while (root_ != NULL) {
+        Node<Key,Value>* currr = root_;
+        Node<Key,Value>* myPar = NULL;
+
+        while (currr->getLeft()||currr->getRight()) {
+            myPar = currr;
+            if (currr->getLeft()) {
+                currr=currr->getLeft();
+            }
+            else {
+                currr=currr->getRight();
+            }
+        }
+        if (myPar) {
+            if (myPar->getLeft()==currr) {
+                myPar->setLeft(NULL);
+            }
+            else {
+                myPar->setRight(NULL);
+            }
+
+        }
+        else {
+            root_=NULL;
+        }
+        delete currr;/*
         if (root_->getLeft() != NULL) {
           Node<Key,Value>* myVar = root_->getLeft();
           delete root_;
@@ -600,7 +625,7 @@ void BinarySearchTree<Key, Value>::clear()
         else {
           delete root_;
           root_ = NULL;
-        }
+        }*/
     }
 
 }
